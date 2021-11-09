@@ -4,7 +4,7 @@
   "description": "An Express+Pug app written in javascript, from the Launch School JS175 course",
   "main": "index.js",
   "scripts": {
-    "start": "node contacts.js",
+    "start": "npx nodemon contacts.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
