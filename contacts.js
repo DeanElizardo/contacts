@@ -43,6 +43,10 @@ let contactData = [
 
 const app = express();
 
+function validateContact(contact) {
+
+}
+
 app.set('views', './views');
 app.set('view engine', 'pug');
 
@@ -58,14 +62,48 @@ app.get('/contacts', (req, res) => {
     contacts: sortContacts(contactData),
   });
 });
-app.post('/contacts', (req, res) => {
-  contactData.push({
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    phoneNumber: req.body.phoneNumber
-  });
-  res.redirect('/contacts');
-});
+app.post('/contacts',
+  (req, res, next) => {
+    res.locals.errorMessages = [];
+
+    next();
+  },
+  (req, res, next) => {
+    if (req.body.firstName.length === 0) {
+      res.locals.errorMessages.push("First Name Required");
+    }
+
+    next();
+  },
+  (req, res, next) => {
+    if (req.body.lastName.length === 0) {
+      res.locals.errorMessages.push("Last Name Required");
+    }
+
+    next();
+  },
+  (req, res, next) => {
+    if (req.body.phoneNumber.length === 0) {
+      res.locals.errorMessages.push("Phone Number Required");
+    }
+
+    next();
+  },
+  (req, res) => {
+    if (res.locals.errorMessages.length > 0) {
+      res.render('addContact', {
+        errorMessages: res.locals.errorMessages,
+      });
+    } else {
+      contactData.push({
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        phoneNumber: req.body.phoneNumber
+      });
+      res.redirect('/contacts');
+    }
+  }
+);
 app.get('/contacts/new', (req, res) => {
   res.render("addContact");
 });
