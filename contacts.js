@@ -46,8 +46,9 @@ const app = express();
 app.set('views', './views');
 app.set('view engine', 'pug');
 
-app.use(express.static('public'));
 app.use(morgan("common"));
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res, next) => {
   res.redirect('/contacts');
@@ -57,6 +58,18 @@ app.get('/contacts', (req, res) => {
     contacts: sortContacts(contactData),
   });
 });
+app.post('/contacts', (req, res) => {
+  contactData.push({
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    phoneNumber: req.body.phoneNumber
+  });
+  res.redirect('/contacts');
+});
+app.get('/contacts/new', (req, res) => {
+  res.render("addContact");
+});
+
 
 app.listen(PORT, HOST, () => {
   console.log(`START OF LOG: ${(new Date()).toUTCString()}\nListening on port ${PORT}`);
