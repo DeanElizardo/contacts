@@ -64,6 +64,8 @@ app.post('/contacts',
     req.body.firstName = req.body.firstName.trim();
     req.body.lastName = req.body.lastName.trim();
     req.body.phoneNumber = req.body.phoneNumber.trim();
+
+    next();
   },
   //init error message object for this req/res cycle
   (req, res, next) => {
@@ -97,12 +99,45 @@ app.post('/contacts',
   },
   //assert that names must be no longer than 25 characters
   (req, res, next) => {
-    if (req.body.firstName > 25) {
+    if (req.body.firstName.length > 25) {
       res.locals.errorMessages.push("First Name must be less than 25 characters");
     }
-    if (req.body.lastName > 25) {
+
+    next();
+  },
+  (req, res, next) => {
+    if (req.body.lastName.length > 25) {
       res.locals.errorMessages.push("Last Name must be less than 25 characters");
     }
+
+    next();
+  },
+  //assert that names must contain only letters
+  (req, res, next) => {
+    res.locals.alphabet = new RegExp(/[^a-z]/, 'i');
+
+    if (res.locals.alphabet.test(req.body.firstName)) {
+      res.locals.errorMessages.push("First Names must contain only letters");
+    }
+
+    next();
+  },
+  (req, res, next) => {
+    if (res.locals.alphabet.test(req.body.lastName)) {
+      res.locals.errorMessages.push("Last Names must contain only letters");
+    }
+
+    next();
+  },
+  //assert that phone numbers must be US 10-digit format
+  (req, res, next) => {
+    res.locals.numberFormat = new RegExp(/\d{3}-\d{3}-\d{4}/);
+
+    if (!res.locals.numberFormat.test(req.body.phoneNumber)) {
+      res.locals.errorMessages.push("Phone Numbers must be in the US 10-digit format");
+    }
+
+    next();
   },
   //check for errors; route accordingly
   (req, res) => {
