@@ -23,17 +23,30 @@ body
           dt
             label(for="firstName") First Name:
           dd
-            input(type="text" id="firstName" name="firstName" required="required")
+            input(type="text" 
+                  id="firstName" 
+                  name="firstName" 
+                  required="required" 
+                  value=`${firstName}`)
         dl
           dt 
             label(for="lastName") Last Name: 
           dd
-            input(type="text" id="lastName" name="lastName" required="required")
+            input(type="text" 
+                  id="lastName" 
+                  name="lastName" 
+                  required="required"
+                  value=`${lastName}`)
         dl
           dt
             label(for="phoneNumber") Phone Number:
           dd
-            input(type="text" id="phoneNumber" name="phoneNumber" placeholder="###-###-####" required="required")
+            input(type="text" 
+                  id="phoneNumber" 
+                  name="phoneNumber" 
+                  placeholder="###-###-####" 
+                  required="required"
+                  value=`${phoneNumber}`)
       fieldset
         input(type="submit" value="Save")
-        button.cancel(formaction="/contacts" formmethod="get") Cancel
+        button.cancel(formaction="/contacts" formmethod="get" formnovalidate) Cancel
