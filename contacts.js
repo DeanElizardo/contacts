@@ -43,7 +43,8 @@ let contactData = [
 
 const checkForExistingContact = function(contactFirstName, contactLastName) {
   return contactData.some(entry => {
-    return entry.firstName !== contactFirstName && entry.lastName !== contactLastName;
+    console.log(`${entry.firstName} ${contactFirstName} :: ${entry.lastName} ${contactLastName}`)
+    return (entry.firstName === contactFirstName && entry.lastName === contactLastName);
   });
 }
 
@@ -76,6 +77,11 @@ app.post('/contacts',
   //init error message object for this req/res cycle
   (req, res, next) => {
     res.locals.errorMessages = [];
+    res.locals.errorFlags = {
+      firstName: 0,
+      lastName:  0,
+      phoneNum:  0,
+    }
 
     next();
   },
@@ -83,6 +89,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (req.body.firstName.length === 0) {
       res.locals.errorMessages.push("First Name Required");
+      res.locals.errorFlags.firstName += 1;
     }
 
     next();
@@ -91,6 +98,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (req.body.lastName.length === 0) {
       res.locals.errorMessages.push("Last Name Required");
+      res.locals.errorFlags.lastName += 1;
     }
 
     next();
@@ -99,6 +107,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (req.body.phoneNumber.length === 0) {
       res.locals.errorMessages.push("Phone Number Required");
+      res.locals.errorFlags.phoneNum += 1;
     }
 
     next();
@@ -107,6 +116,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (req.body.firstName.length > 25) {
       res.locals.errorMessages.push("First Name must be less than 25 characters");
+      res.locals.errorFlags.firstName += 1;
     }
 
     next();
@@ -114,6 +124,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (req.body.lastName.length > 25) {
       res.locals.errorMessages.push("Last Name must be less than 25 characters");
+      res.locals.errorFlags.lastName += 1;
     }
 
     next();
@@ -124,6 +135,7 @@ app.post('/contacts',
 
     if (res.locals.alphabet.test(req.body.firstName)) {
       res.locals.errorMessages.push("First Names must contain only letters");
+      res.locals.errorFlags.firstName += 1;
     }
 
     next();
@@ -131,6 +143,7 @@ app.post('/contacts',
   (req, res, next) => {
     if (res.locals.alphabet.test(req.body.lastName)) {
       res.locals.errorMessages.push("Last Names must contain only letters");
+      res.locals.errorFlags.lastName += 1;
     }
 
     next();
@@ -141,6 +154,7 @@ app.post('/contacts',
 
     if (!res.locals.numberFormat.test(req.body.phoneNumber)) {
       res.locals.errorMessages.push("Phone Numbers must be in the US 10-digit format");
+      res.locals.errorFlags.phoneNum += 1;
     }
 
     next();
@@ -156,9 +170,12 @@ app.post('/contacts',
   //check for errors; route accordingly
   (req, res) => {
     if (res.locals.errorMessages.length > 0) {
-      res.render('addContact', {
-        errorMessages: res.locals.errorMessages,
-      });
+      let responseObject = { errorMessages: res.locals.errorMessages };
+      responseObject.firstName = res.locals.errorFlags.firstName ? "" : req.body.firstName;
+      responseObject.lastName = res.locals.errorFlags.lastName ? "" : req.body.lastName;
+      responseObject.phoneNumber = res.locals.errorFlags.phoneNum ? "" : req.body.phoneNumber;
+      
+      res.render('addContact', responseObject);
     } else {
       contactData.push({
         firstName: req.body.firstName,
@@ -170,7 +187,11 @@ app.post('/contacts',
   }
 );
 app.get('/contacts/new', (req, res) => {
-  res.render("addContact");
+  res.render("addContact", {
+    firstName: "",
+    lastName: "",
+    phoneNumber: ""
+  });
 });
 
 
