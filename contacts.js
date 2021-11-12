@@ -41,6 +41,12 @@ let contactData = [
   },
 ];
 
+const checkForExistingContact = function(contactFirstName, contactLastName) {
+  return contactData.some(entry => {
+    return entry.firstName !== contactFirstName && entry.lastName !== contactLastName;
+  });
+}
+
 const app = express();
 
 app.set('views', './views');
@@ -135,6 +141,14 @@ app.post('/contacts',
 
     if (!res.locals.numberFormat.test(req.body.phoneNumber)) {
       res.locals.errorMessages.push("Phone Numbers must be in the US 10-digit format");
+    }
+
+    next();
+  },
+  //check for duplicate contacts
+  (req, res, next) => {
+    if (checkForExistingContact(req.body.firstName, req.body.lastName)) {
+      res.locals.errorMessages.push("This contact already exists. Duplicates are not allowed");
     }
 
     next();
