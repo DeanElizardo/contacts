@@ -1,8 +1,12 @@
 const express = require('express');
 const morgan = require('morgan');
 const { body, validationResult } = require("express-validator");
+const session = require("express-session");
+const store = require("connect-loki");
+const { json } = require('express');
 const HOST = '127.0.0.1';
 const PORT = 3030;
+
 const sortContacts = contacts => {
   return contacts.slice().sort((contactA, contactB) => {
     if (contactA.lastName < contactB.lastName) {
@@ -19,7 +23,7 @@ const sortContacts = contacts => {
   });
 };
 
-let contactData = [
+const contactData = [
   {
     firstName: "Mike",
     lastName: "Jones",
@@ -46,7 +50,7 @@ const checkForExistingContact = function (contactFirstName, contactLastName) {
   return contactData.some(entry => {
     return (entry.firstName === contactFirstName && entry.lastName === contactLastName);
   });
-}
+};
 
 const validateName = function (name, whichName) {
   return body(name)
@@ -56,14 +60,39 @@ const validateName = function (name, whichName) {
     .bail()
     .isAlpha()
     .withMessage(`${whichName} name cannot contain non-alphabetical characters`);
-}
+};
+
+const clone = object => {
+  return JSON.parse(JSON.stringify(object));
+};
 
 const app = express();
+const LokiStore = store(session);
 
 app.set('views', './views');
 app.set('view engine', 'pug');
 
 app.use(morgan("common"));
+app.use(session({
+  cookie: {
+    httpOnly: true,
+    maxAge: 31 * 24 * 60 * 60 * 100, //31 days in milliseconds
+    path: "/",
+    secure: false,
+  },
+  name: "launch-school-contacts-manager-proj-session-id",
+  resave: false,
+  saveUninitialized: true,
+  secret: "this is not very secure",
+  store: new LokiStore({}),
+}));
+app.use((req, res, next) => {
+  if (!("contactData" in req.session)) {
+    req.session.contactData = clone(contactData);
+  }
+
+  next();
+});
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
 
@@ -72,7 +101,7 @@ app.get('/', (req, res, next) => {
 });
 app.get('/contacts', (req, res) => {
   res.render("contacts", {
-    contacts: sortContacts(contactData),
+    contacts: sortContacts(req.session.contactData),
   });
 });
 app.post('/contacts',
@@ -109,7 +138,7 @@ app.post('/contacts',
     }
   },
   (req, res) => {
-    contactData.push({
+    req.session.contactData.push({
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       phoneNumber: req.body.phoneNumber
