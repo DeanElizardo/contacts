@@ -1,5 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
+const { body, validationResult } = require("express-validator");
 const HOST = '127.0.0.1';
 const PORT = 3030;
 const sortContacts = contacts => {
@@ -66,124 +67,52 @@ app.get('/contacts', (req, res) => {
   });
 });
 app.post('/contacts',
-  //trim names
+  [
+    body("firstName")
+      .trim()
+      .isLength({ min: 1, max: 25})
+      .withMessage("First name must be 1 - 25 characters long")
+      .bail()
+      .isAlpha()
+      .withMessage("First name cannot contain non-alphabetical characters"),
+
+    body("lastName")
+      .trim()
+      .isLength({ min: 1, max: 25 })
+      .withMessage("Last name must be between 1 - 25 characters long")
+      .bail()
+      .isAlpha()
+      .withMessage("Last name cannot contain non-alphabetical characters"),
+
+    body("phoneNumber")
+      .trim()
+      .isLength({ min: 1})
+      .withMessage("Phone number must not be empty")
+      .bail()
+      .matches(/\d{3}-\d{3}-\d{4}/)
+      .withMessage("Phone number must be in the U.S. 10 digit format ###-###-####")
+  ],
   (req, res, next) => {
-    req.body.firstName = req.body.firstName.trim();
-    req.body.lastName = req.body.lastName.trim();
-    req.body.phoneNumber = req.body.phoneNumber.trim();
-
-    next();
-  },
-  //init error message object for this req/res cycle
-  (req, res, next) => {
-    res.locals.errorMessages = [];
-    res.locals.errorFlags = {
-      firstName: 0,
-      lastName:  0,
-      phoneNum:  0,
-    }
-
-    next();
-  },
-  //register error for empty first name field
-  (req, res, next) => {
-    if (req.body.firstName.length === 0) {
-      res.locals.errorMessages.push("First Name Required");
-      res.locals.errorFlags.firstName += 1;
-    }
-
-    next();
-  },
-  //register error for empty last name field
-  (req, res, next) => {
-    if (req.body.lastName.length === 0) {
-      res.locals.errorMessages.push("Last Name Required");
-      res.locals.errorFlags.lastName += 1;
-    }
-
-    next();
-  },
-  //register error for empty phone number field
-  (req, res, next) => {
-    if (req.body.phoneNumber.length === 0) {
-      res.locals.errorMessages.push("Phone Number Required");
-      res.locals.errorFlags.phoneNum += 1;
-    }
-
-    next();
-  },
-  //assert that names must be no longer than 25 characters
-  (req, res, next) => {
-    if (req.body.firstName.length > 25) {
-      res.locals.errorMessages.push("First Name must be less than 25 characters");
-      res.locals.errorFlags.firstName += 1;
-    }
-
-    next();
-  },
-  (req, res, next) => {
-    if (req.body.lastName.length > 25) {
-      res.locals.errorMessages.push("Last Name must be less than 25 characters");
-      res.locals.errorFlags.lastName += 1;
-    }
-
-    next();
-  },
-  //assert that names must contain only letters
-  (req, res, next) => {
-    res.locals.alphabet = new RegExp(/[^a-z]/, 'i');
-
-    if (res.locals.alphabet.test(req.body.firstName)) {
-      res.locals.errorMessages.push("First Names must contain only letters");
-      res.locals.errorFlags.firstName += 1;
-    }
-
-    next();
-  },
-  (req, res, next) => {
-    if (res.locals.alphabet.test(req.body.lastName)) {
-      res.locals.errorMessages.push("Last Names must contain only letters");
-      res.locals.errorFlags.lastName += 1;
-    }
-
-    next();
-  },
-  //assert that phone numbers must be US 10-digit format
-  (req, res, next) => {
-    res.locals.numberFormat = new RegExp(/\d{3}-\d{3}-\d{4}/);
-
-    if (!res.locals.numberFormat.test(req.body.phoneNumber)) {
-      res.locals.errorMessages.push("Phone Numbers must be in the US 10-digit format");
-      res.locals.errorFlags.phoneNum += 1;
-    }
-
-    next();
-  },
-  //check for duplicate contacts
-  (req, res, next) => {
-    if (checkForExistingContact(req.body.firstName, req.body.lastName)) {
-      res.locals.errorMessages.push("This contact already exists. Duplicates are not allowed");
-    }
-
-    next();
-  },
-  //check for errors; route accordingly
-  (req, res) => {
-    if (res.locals.errorMessages.length > 0) {
-      let responseObject = { errorMessages: res.locals.errorMessages };
-      responseObject.firstName = res.locals.errorFlags.firstName ? "" : req.body.firstName;
-      responseObject.lastName = res.locals.errorFlags.lastName ? "" : req.body.lastName;
-      responseObject.phoneNumber = res.locals.errorFlags.phoneNum ? "" : req.body.phoneNumber;
-      
-      res.render('addContact', responseObject);
-    } else {
-      contactData.push({
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.render("addContact", {
+        errorMessages: errors.array().map(error => error.msg),
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         phoneNumber: req.body.phoneNumber
       });
-      res.redirect('/contacts');
+    } else {
+      next();
     }
+  },
+  (req, res) => {
+    contactData.push({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      phoneNumber: req.body.phoneNumber
+    });
+
+    res.redirect("/contacts");
   }
 );
 app.get('/contacts/new', (req, res) => {
