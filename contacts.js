@@ -17,7 +17,7 @@ const sortContacts = contacts => {
       return 0;
     }
   });
-}; 
+};
 
 let contactData = [
   {
@@ -42,11 +42,21 @@ let contactData = [
   },
 ];
 
-const checkForExistingContact = function(contactFirstName, contactLastName) {
+const checkForExistingContact = function (contactFirstName, contactLastName) {
   return contactData.some(entry => {
     console.log(`${entry.firstName} ${contactFirstName} :: ${entry.lastName} ${contactLastName}`)
     return (entry.firstName === contactFirstName && entry.lastName === contactLastName);
   });
+}
+
+const validateName = function (name, whichName) {
+  return body(name)
+    .trim()
+    .isLength({ min: 1, max: 25 })
+    .withMessage(`${whichName} name must be 1 - 25 characters long`)
+    .bail()
+    .isAlpha()
+    .withMessage(`${whichName} name cannot contain non-alphabetical characters`);
 }
 
 const app = express();
@@ -68,25 +78,12 @@ app.get('/contacts', (req, res) => {
 });
 app.post('/contacts',
   [
-    body("firstName")
-      .trim()
-      .isLength({ min: 1, max: 25})
-      .withMessage("First name must be 1 - 25 characters long")
-      .bail()
-      .isAlpha()
-      .withMessage("First name cannot contain non-alphabetical characters"),
-
-    body("lastName")
-      .trim()
-      .isLength({ min: 1, max: 25 })
-      .withMessage("Last name must be between 1 - 25 characters long")
-      .bail()
-      .isAlpha()
-      .withMessage("Last name cannot contain non-alphabetical characters"),
+    validateName("firstName", "First"),
+    validateName("lastName", "Last"),
 
     body("phoneNumber")
       .trim()
-      .isLength({ min: 1})
+      .isLength({ min: 1 })
       .withMessage("Phone number must not be empty")
       .bail()
       .matches(/\d{3}-\d{3}-\d{4}/)
