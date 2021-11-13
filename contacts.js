@@ -44,7 +44,6 @@ let contactData = [
 
 const checkForExistingContact = function (contactFirstName, contactLastName) {
   return contactData.some(entry => {
-    console.log(`${entry.firstName} ${contactFirstName} :: ${entry.lastName} ${contactLastName}`)
     return (entry.firstName === contactFirstName && entry.lastName === contactLastName);
   });
 }
@@ -90,10 +89,17 @@ app.post('/contacts',
       .withMessage("Phone number must be in the U.S. 10 digit format ###-###-####")
   ],
   (req, res, next) => {
-    let errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    res.locals.errors = validationResult(req).errors;
+    if (checkForExistingContact(req.body.firstName, req.body.lastName)) {
+      res.locals.errors.push({msg: "Duplicate contacts are not allowed"});
+    }
+
+    next();
+  },
+  (req, res, next) => {
+    if (res.locals.errors.length > 0) {
       res.render("addContact", {
-        errorMessages: errors.array().map(error => error.msg),
+        errorMessages: res.locals.errors.map(error => error.msg),
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         phoneNumber: req.body.phoneNumber
