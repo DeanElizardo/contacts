@@ -46,8 +46,8 @@ const contactData = [
   },
 ];
 
-const checkForExistingContact = function (contactFirstName, contactLastName) {
-  return contactData.some(entry => {
+const checkForExistingContact = function (req, contactFirstName, contactLastName) {
+  return req.session.contactData.some(entry => {
     return (entry.firstName === contactFirstName && entry.lastName === contactLastName);
   });
 };
@@ -119,7 +119,7 @@ app.post('/contacts',
   ],
   (req, res, next) => {
     res.locals.errors = validationResult(req).errors;
-    if (checkForExistingContact(req.body.firstName, req.body.lastName)) {
+    if (checkForExistingContact(req, req.body.firstName, req.body.lastName)) {
       res.locals.errors.push({msg: "Duplicate contacts are not allowed"});
     }
 
