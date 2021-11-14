@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const session = require("express-session");
 const store = require("connect-loki");
 const { json } = require('express');
+const flash = require('express-flash');
 const HOST = '127.0.0.1';
 const PORT = 3030;
 
@@ -86,6 +87,7 @@ app.use(session({
   secret: "this is not very secure",
   store: new LokiStore({}),
 }));
+app.use(flash());
 app.use((req, res, next) => {
   if (!("contactData" in req.session)) {
     req.session.contactData = clone(contactData);
@@ -95,6 +97,11 @@ app.use((req, res, next) => {
 });
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
+  next();
+});
 
 app.get('/', (req, res, next) => {
   res.redirect('/contacts');
@@ -127,8 +134,14 @@ app.post('/contacts',
   },
   (req, res, next) => {
     if (res.locals.errors.length > 0) {
+      res.locals.errors.forEach(error => req.flash("error", error.msg));
+      
+      //for demonstration purposes only! should be commented out!
+      // req.flash("info", "Damnit, Jim! I'm a doctor, not a bricklayer!");
+      // req.flash("success", "Engage!");
+
       res.render("addContact", {
-        errorMessages: res.locals.errors.map(error => error.msg),
+        flash: req.session.flash,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         phoneNumber: req.body.phoneNumber
@@ -143,6 +156,8 @@ app.post('/contacts',
       lastName: req.body.lastName,
       phoneNumber: req.body.phoneNumber
     });
+
+    req.flash("success", "New contact added!");
 
     res.redirect("/contacts");
   }
